@@ -6,6 +6,8 @@ extern "C" {
 #endif
 
 #include "main.h"
+#include "cmsis_os.h"
+#include "lv_color.h"
 
 
 #define USE_HORIZONTAL 2  //设置横屏或者竖屏显示 0或1为竖屏 2或3为横屏
@@ -34,18 +36,6 @@ extern SPI_HandleTypeDef hspi1;
 //GPIO-重写
 //==========================================
 
-#define LCD_RES_GPIO        GPIOC
-#define LCD_RES_GPIO_PIN    GPIO_PIN_7
-
-#define LCD_DC_GPIO         GPIOA
-#define LCD_DC_GPIO_PIN     GPIO_PIN_9
-
-#define LCD_CS_GPIO         GPIOB
-#define LCD_CS_GPIO_PIN     GPIO_PIN_6
-
-#define LCD_BLK_GPIO        GPIOB
-#define LCD_BLK_GPIO_PIN    GPIO_PIN_1
-
 #ifdef SW_SPI
 #define LCD_SCLK_GPIO       GPIOA
 #define LCD_SCLK_GPIO_PIN   GPIO_PIN_5
@@ -56,17 +46,18 @@ extern SPI_HandleTypeDef hspi1;
 //==========================================
 //GPIO电平设置 宏定义 不需要修改
 //==========================================
-#define LCD_RES_Clr()  HAL_GPIO_WritePin(LCD_RES_GPIO,LCD_RES_GPIO_PIN,GPIO_PIN_RESET)//RES
-#define LCD_RES_Set()  HAL_GPIO_WritePin(LCD_RES_GPIO,LCD_RES_GPIO_PIN,GPIO_PIN_SET)
+#define LCD_RES_Clr()  HAL_GPIO_WritePin(LCD_RES_GPIO_Port,LCD_RES_Pin,GPIO_PIN_RESET)//RES
+#define LCD_RES_Set()  HAL_GPIO_WritePin(LCD_RES_GPIO_Port,LCD_RES_Pin,GPIO_PIN_SET)
 
-#define LCD_DC_Clr()   HAL_GPIO_WritePin(LCD_DC_GPIO,LCD_DC_GPIO_PIN,GPIO_PIN_RESET)//DC
-#define LCD_DC_Set()   HAL_GPIO_WritePin(LCD_DC_GPIO,LCD_DC_GPIO_PIN,GPIO_PIN_SET)
+#define LCD_DC_Clr()   HAL_GPIO_WritePin(LCD_DC_GPIO_Port,LCD_DC_Pin,GPIO_PIN_RESET)//DC
+#define LCD_DC_Set()   HAL_GPIO_WritePin(LCD_DC_GPIO_Port,LCD_DC_Pin,GPIO_PIN_SET)
 
-#define LCD_CS_Clr()   HAL_GPIO_WritePin(LCD_CS_GPIO,LCD_CS_GPIO_PIN,GPIO_PIN_RESET)//CS
-#define LCD_CS_Set()   HAL_GPIO_WritePin(LCD_CS_GPIO,LCD_CS_GPIO_PIN,GPIO_PIN_SET)
+#define LCD_CS_Clr()   HAL_GPIO_WritePin(LCD_CS_GPIO_Port,LCD_CS_Pin,GPIO_PIN_RESET)//CS
+#define LCD_CS_Set()   HAL_GPIO_WritePin(LCD_CS_GPIO_Port,LCD_CS_Pin,GPIO_PIN_SET)
 
-#define LCD_BLK_Clr()  HAL_GPIO_WritePin(LCD_BLK_GPIO,LCD_BLK_GPIO_PIN,GPIO_PIN_RESET)//BLK
-#define LCD_BLK_Set()  HAL_GPIO_WritePin(LCD_BLK_GPIO,LCD_BLK_GPIO_PIN,GPIO_PIN_SET)
+#define LCD_BLK_Clr()  HAL_GPIO_WritePin(LCD_BLK_GPIO_Port,LCD_BLK_Pin,GPIO_PIN_RESET)//BLK
+#define LCD_BLK_Set()  HAL_GPIO_WritePin(LCD_BLK_GPIO_Port,LCD_BLK_Pin,GPIO_PIN_SET)
+
 
 #ifdef SW_SPI
 #define LCD_SCLK_Clr() HAL_GPIO_WritePin(LCD_SCLK_GPIO,LCD_SCLK_GPIO_PIN,GPIO_PIN_RESET)//SCL=SCLK
@@ -104,6 +95,8 @@ uint32_t mypow(uint8_t m,uint8_t n);//求幂
 void LCD_ShowIntNum(uint16_t x,uint16_t y,uint16_t num,uint8_t len,uint16_t fc,uint16_t bc,uint8_t sizey);//显示整数变量
 void LCD_ShowFloatNum1(uint16_t x,uint16_t y,float num,uint8_t len,uint16_t fc,uint16_t bc,uint8_t sizey);//显示两位小数变量
 void LCD_ShowPicture(uint16_t x,uint16_t y,uint16_t length,uint16_t width,const uint8_t pic[]);//显示图片
+void LCD_Clear(uint16_t color);
+void LCD_disp_flush(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color_p);
 
 //画笔颜色
 #define WHITE         	 0xFFFF

@@ -1,6 +1,30 @@
 #include "st7789.h"
 #include "st7789font.h"
 
+extern osSemaphoreId_t DMA_SemaphoreHandle;
+
+uint8_t SPI_WriteByte(uint8_t *TxData, uint16_t size) {
+    osStatus_t result;
+    //获取信号，如果上一个DMA传输完成
+    //信号就能获取到，没有传输完成任务就挂起
+    //等到传输完成再恢复
+    result = osSemaphoreAcquire(DMA_SemaphoreHandle, 0xFFFF);
+    if (result == osOK) {
+        //获取成功
+        return HAL_SPI_Transmit_DMA(&hspi1, TxData, size);
+    } else {
+        //获取失败
+        return 1;
+    }
+}
+
+//DMA 传输完成后会调用 SPI传输完成回调函数
+//在该函数中我们释放信号
+void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
+    if (hspi->Instance == hspi1.Instance)
+        osSemaphoreRelease(DMA_SemaphoreHandle);
+}
+
 /******************************************************************************
       函数说明：LCD串行数据写入函数
       入口数据：dat  要写入的串行数据
@@ -10,7 +34,7 @@ void LCD_Writ_Bus(uint8_t dat) {
     LCD_CS_Clr();
 
 #if defined HW_SPI
-    HAL_SPI_Transmit(&ST7789_LCD_SPI, &dat, 1, 0xffff);
+    SPI_WriteByte(&dat, 1);
 #elif defined SW_SPI
     uint8_t i;
         for(i=0;i<8;i++)
@@ -793,4 +817,39 @@ void LCD_ShowPicture(uint16_t x, uint16_t y, uint16_t length, uint16_t width, co
             k++;
         }
     }
+}
+
+/**
+ * @brief   以一种颜色清空LCD屏
+ * @param   color —— 清屏颜色(16bit)
+ * @return  none
+ */
+void LCD_Clear(uint16_t color) {
+    uint16_t i;
+    uint8_t data[2] = {0};  //color是16bit的，每个像素点需要两个字节的显存
+
+    /* 将16bit的color值分开为两个单独的字节 */
+    data[0] = color >> 8;
+    data[1] = color;
+    LCD_Address_Set(0, 0, LCD_W - 1, LCD_H - 1);
+    LCD_CS_Clr();
+    for (i = 0; i < ((LCD_W) * (LCD_H)); i++) {
+        SPI_WriteByte(data, 2);
+    }
+    LCD_CS_Set();
+}
+
+void LCD_disp_flush(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color_p) {
+    int32_t y;
+    LCD_Address_Set(x1, y1, x2, y2);
+    LCD_CS_Clr();
+//
+//    for (y = y1; y <= y2; y++) {
+//        if (osSemaphoreAcquire(DMA_SemaphoreHandle, 0xFFFF) == osOK) {
+//            HAL_SPI_Transmit_DMA(&hspi1,color_p, (uint16_t) (x2 - x1 + 1) * 2);
+//        }
+//        color_p += (x2 - x1 + 1);
+//    }
+
+    LCD_CS_Set();
 }
